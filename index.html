@@ -1,1 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCHN Professional Quiz - 125 Questions</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --warning: #f39c12;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #dcdde1;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #quiz-container {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        #timer-display {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            background: #eee;
+            padding: 8px 25px;
+            border-radius: 50px;
+            min-width: 100px;
+            text-align: center;
+            border: 3px solid var(--secondary);
+        }
+
+        .timer-low {
+            color: var(--danger) !important;
+            border-color: var(--danger) !important;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .progress-bar-bg {
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--secondary);
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .option {
+            background: var(--light);
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            transition: 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .option:hover { background: #f0f0f0; border-color: var(--secondary); }
+        .option.selected { border-color: var(--secondary); background: #e1f5fe; }
+        .option.correct { background: #d4edda !important; border-color: var(--success) !important; color: #155724; }
+        .option.wrong { background: #f8d7da !important; border-color: var(--danger) !important; color: #721c24; }
+
+        .explanation {
+            margin-top: 1.5rem;
+            padding: 1.2rem;
+            background: #fff3cd;
+            border-left: 6px solid var(--warning);
+            display: none;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .btn-nav { background: var(--primary); color: white; }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+        #submit-btn { background: var(--success); color: white; flex-grow: 1; }
+
+        .results { text-align: center; display: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="quiz-ui">
+        <div class="header-box">
+            <h2 style="margin:0;">PCHN Model Exam <h3> by Yaregal Semanew </h3></h2>
+            <div id="timer-display">01:00</div>
+        </div>
+        
+        <div class="progress-bar-bg"><div id="progress-fill"></div></div>
+        <p id="counter" style="text-align:right; font-weight:bold; margin-bottom: 10px; color: #666;"></p>
+
+        <div id="question-area">
+            <div id="q-text" class="question-text"></div>
+            <div id="options-list"></div>
+        </div>
+
+        <div id="explanation-box" class="explanation">
+            <strong>Rationale:</strong> <span id="rationale-text"></span>
+        </div>
+
+        <div class="controls">
+            <button id="prev-btn" class="btn-nav" onclick="move(-1)">Previous</button>
+            <button id="submit-btn" onclick="manualCheck()">Submit Answer</button>
+            <button id="next-btn" class="btn-nav" onclick="move(1)">Next</button>
+        </div>
+    </div>
+
+    <div id="results-ui" class="results">
+        <h1>Quiz Completed!</h1>
+        <p style="font-size: 2.5rem; font-weight: bold; color: var(--secondary);">Final Score: <span id="final-score"></span></p>
+        <p id="feedback-text"></p>
+        <button class="btn-nav" style="padding: 15px 40px;" onclick="location.reload()">Restart Quiz</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "A 3-year-old child is admitted to the pediatric ward with severe dehydration. The nurse needs to calculate fluid replacement. Which nursing skill is most critical to ensure the safety of the child during fluid resuscitation?", a: 1, options: ["Using a standard adult IV set for faster delivery", "Strictly monitoring hourly intake and output (I/O)", "Allowing the mother to adjust the flow rate", "Administering oral fluids only to avoid needle sticks"], r: "Monitoring I/O is critical to prevent fluid overload and assess treatment efficacy." },
+        { q: "While performing a physical assessment on a 6-month-old infant, the nurse notes that the mother appears anxious and avoids eye contact. Which nursing attitude best demonstrates family-centered care?", a: 2, options: ["Ignoring the mother's behavior", "Reporting the mother to social services immediately", "Listening and encouraging the mother to participate in the infant’s care", "Telling the mother there is nothing to worry about"], r: "Family-centered care prioritizes communication and caregiver involvement." },
+        { q: "A nurse is preparing to administer an intramuscular (IM) injection to a 2-year-old child. Which site is the most appropriate according to pediatric nursing standards?", a: 1, options: ["Dorsogluteal muscle", "Vastus lateralis muscle", "Deltoid muscle", "Abdominal wall"], r: "The vastus lateralis is the preferred site for toddlers due to muscle development." },
+        { q: "A 5-year-old child is scheduled for a minor surgical procedure. The nurse uses a doll to explain the procedure. This nursing intervention is based on which developmental principle?", a: 1, options: ["Sensorimotor development", "Therapeutic play to reduce anxiety", "Concrete operational logic", "Behavioral conditioning"], r: "Therapeutic play helps children process medical procedures at their level." },
+        { q: "The nurse observes a bluish discoloration of the hands and feet of a newborn, while the trunk is pink. What is the nurse's most appropriate action?", a: 1, options: ["Begin immediate resuscitation", "Document the finding as acrocyanosis and keep the infant warm", "Administer high-flow oxygen", "Diagnose the infant with a congenital heart defect"], r: "Acrocyanosis is a normal physiological finding in the first 24-48 hours of life." },
+        { q: "The nurse asks a mother to demonstrate how to mix Oral Rehydration Salts (ORS). Which domain of learning is the nurse evaluating?", a: 2, options: ["Cognitive domain", "Affective domain", "Psychomotor domain", "Theoretical domain"], r: "Psychomotor learning involves physical skills and demonstrations." },
+        { q: "A nurse is caring for an 8-year-old child with chronic asthma who fears they can no longer play football. Which nursing response shows the best professional attitude?", a: 2, options: ["Agreeing that football is too dangerous", "Telling the child to focus on schoolwork instead", "Exploring the child's fears and discussing how to use a 'reliever' inhaler", "Informing the parents to keep the child indoors"], r: "Encouraging activity with proper medication management is key for pediatric asthma." },
+        { q: "What is the most effective foundational skill to gain a 4-year-old's cooperation during a head-to-toe assessment?", a: 1, options: ["Starting with the most invasive procedures", "Performing the exam from least invasive to most invasive", "Restraining the child immediately", "Asking the mother to leave the room"], r: "Starting with non-threatening tasks builds trust and cooperation." },
+        { q: "A 10-month-old infant cannot sit without support. Which nursing action is most appropriate?", a: 1, options: ["Documentation as normal", "Performing a detailed developmental screening and referring", "Feeding the infant more frequently", "Waiting until the 12-month visit"], r: "Missing a major milestone like sitting requires immediate evaluation." },
+        { q: "In which position should the nurse place the syringe to prevent aspiration when giving liquid meds to a 1-year-old?", a: 2, options: ["Directly into the back of the throat", "In the center of the tongue", "Along the side of the cheek (buccal mucosa)", "Mixed with a full bottle of formula"], r: "Buccal administration reduces the risk of gagging and aspiration." },
+        { q: "A 14-year-old with Type 1 Diabetes is hiding sweets. Which approach reflects an understanding of adolescent development?", a: 1, options: ["Strictly lecturing on the dangers", "Involving the adolescent in meal planning and flexibility", "Taking the sweets away", "Telling the parents they are failing"], r: "Adolescents require autonomy and involvement in their own care decisions." },
+        { q: "A 6-year-old child with a high fever is currently shivering. Which intervention is most appropriate?", a: 1, options: ["Applying ice packs to the axilla", "Providing a light blanket and monitoring temperature", "Giving a cold water bath", "Encouraging vigorous exercise"], r: "Shivering increases core temperature; light covering prevents heat loss while increasing comfort." },
+        { q: "Which ethical principle is the nurse balancing when considering an adolescent's request for privacy versus the parents' right to know?", a: 2, options: ["Justice", "Beneficence", "Autonomy", "Non-maleficence"], r: "Autonomy refers to the patient's right to self-determination and privacy." },
+        { q: "What is the most appropriate initial step in resolving an ethical dilemma regarding life-sustaining treatment between team and parents?", a: 2, options: ["Follow the parents' wishes immediately", "Follow the medical team's orders", "Refer the case to the hospital's Ethics Committee", "Side with the party that has more evidence"], r: "Ethics committees provide multi-disciplinary guidance in complex conflicts." },
+        { q: "A nurse witnesses a colleague fail to report a med error. According to Veracity, the nurse should:", a: 1, options: ["Keep it confidential", "Report the incident accurately to the supervisor", "Wait for the colleague to report it", "Inform the parents only if symptoms show"], r: "Veracity is the obligation to tell the truth in professional practice." },
+        { q: "In Ethiopia, a nurse ensures children are seen based on severity rather than social status. This is:", a: 2, options: ["Fidelity", "Autonomy", "Justice", "Paternalism"], r: "Justice ensures fair and equitable distribution of healthcare." },
+        { q: "Advocating for a child's pain management during a procedure upholds which principle?", a: 0, options: ["Non-maleficence", "Accountability", "Veracity", "Justice"], r: "Non-maleficence means 'to do no harm' (including unnecessary pain)." },
+        { q: "A nurse returns to a child at the promised time. This is:", a: 1, options: ["Beneficence", "Fidelity", "Autonomy", "Confidentiality"], r: "Fidelity is the principle of keeping promises and commitments." },
+        { q: "Acting in the 'best interest' of the child despite parent refusal is practicing:", a: 1, options: ["Advocacy", "Paternalism", "Veracity", "Cooperation"], r: "Paternalism occurs when a professional overrides choice for the patient's benefit." },
+        { q: "What is the relationship between sample size and sampling error?", a: 1, options: ["Error increases with size", "Error decreases with size", "Error remains constant", "Error not affected"], r: "Increasing sample size improves precision and reduces error." },
+        { q: "Why is median weight-for-age preferred over the mean in nutrition programs?", a: 1, options: ["Easier to calculate", "Less affected by extreme values", "Shows variability better", "Increases program coverage"], r: "The median is resistant to outliers (very high or low weights)." },
+        { q: "Which values of p and q give the maximum possible sample size?", a: 2, options: ["p = 0.10, q = 0.90", "p = 0.30, q = 0.70", "p = 0.50, q = 0.50", "p = 0.75, q = 0.25"], r: "Maximum sample size is achieved when the expected proportion is 0.5." },
+        { q: "A screening test has high sensitivity but low specificity. What is the outcome?", a: 3, options: ["Many false negatives", "Low detection rate", "Few true positives", "Many false positives"], r: "Low specificity means many healthy individuals will test positive." },
+        { q: "What is the PRIMARY purpose of collecting weekly malaria reports?", a: 2, options: ["Guide clinical diagnosis", "Evaluate drug regimens", "Monitor trends and detect outbreaks", "Academic research"], r: "Surveillance systems are designed for timely detection of disease trends." },
+        { q: "Which of the following is a source population?", a: 3, options: ["Accessible population", "Specific individuals selected", "Population data collected from", "Population findings generalized to"], r: "The source population is the target group to which findings are applied." },
+        { q: "Study design comparing obese vs non-obese children retrospectively?", a: 0, options: ["Case-control", "Cross-sectional", "Cohort", "Randomized controlled trial"], r: "Case-control studies start with the outcome and look back at causes." },
+        { q: "Best sampling method for diverse representation of mothers?", a: 1, options: ["Convenience", "Simple random", "Cluster", "Judgmental"], r: "Simple random sampling ensures every individual has an equal chance." },
+        { q: "Core principle of Primary Health Care (PHC) in Ethiopia?", a: 2, options: ["Specialized hospital services", "Advanced medical technology", "Equity and community participation", "Market-based delivery"], r: "PHC focuses on community-level access and fairness." },
+        { q: "Motivating staff with a shared vision rather than rules reflects:", a: 2, options: ["Management", "Administration", "Leadership", "Supervision"], r: "Leadership involves vision and inspiration." },
+        { q: "Which of the following is considered a core function of management?", a: 0, options: ["Planning", "Diagnosis", "Treatment", "Counseling"], r: "Planning is the foundational function of management." },
+        { q: "Reallocating resources after reviewing routine reports uses which block?", a: 3, options: ["Health workforce", "Service delivery", "Health financing", "Health information system"], r: "Health Information Systems provide the data needed for decisions." },
+        { q: "Which adult learning principle is applicable to nursing education?", a: 1, options: ["Memorize without context", "Best learnt when relevant to experience", "Collaborative learning is poor", "Learn only through lectures"], r: "Adults learn best when they can connect info to prior knowledge." },
+        { q: "Which adopter category needs peer pressure and adapts for economic necessity?", a: 2, options: ["Early Adopters", "Innovators", "Late Majority", "Early Majority"], r: "The Late Majority is skeptical and adopts only when it becomes a necessity." },
+        { q: "Correct communication process order?", a: 3, options: ["Receiver-Sender...", "Sender-Encoding-Message-Channel...", "Encoding-Sender...", "Sender-Encoding-Message-Channel-Decoding-Receiver-Feedback"], r: "This follows the standard circular communication model." },
+        { q: "The first step in intervening a community health problem is to:", a: 2, options: ["Prioritize problems", "Design strategies", "Community need assessments", "Resources mobilize"], r: "You must assess the problem before planning interventions." },
+        { q: "7-year-old with scaly, erythematous dermatitis on scalp, minimal hair loss.", a: 1, options: ["Psoriasis", "Seborrheic dermatitis", "Candidiasis", "Atopic dermatitis"], r: "Seborrheic dermatitis can occur in older children as well as infants." },
+        { q: "Line through fingertips on greater trochanter/iliac spine runs below umbilicus.", a: 0, options: ["Klisic test", "Galeazzi sign", "Barlow test", "Ortolani test"], r: "This is a positive Klisic test for hip displacement." },
+        { q: "Closed femoral fracture child shows tachypnea/tachycardia after 48 hours.", a: 1, options: ["Compartment syndrome", "Fat embolism", "DVT", "Infection"], r: "Fat embolism syndrome is a complication of long bone fractures." },
+        { q: "Burn with small blisters, pinkish red, moist, severe pain.", a: 2, options: ["4th degree", "3rd degree", "2nd degree", "1st degree"], r: "Second-degree burns are characterized by blisters and pain." },
+        { q: "First action for a playground fractured leg?", a: 0, options: ["Immobilize the limb", "Cold compresses", "Elevate", "Reduce fracture"], r: "Immobilization prevents further soft tissue and nerve damage." },
+        { q: "Immediate action for a child experiencing a seizure?", a: 0, options: ["Move furniture away", "Insert tongue blade", "Restrain", "Prone position"], r: "Protecting the child from environmental injury is the priority." },
+        { q: "Which is false regarding cast application?", a: 2, options: ["Expose to air", "Elevate limb", "Cover all distal parts with cast", "Avoid heat drying"], r: "Distal parts (fingers/toes) must be exposed to check circulation." },
+        { q: "Which is odd regarding acute complications of Diabetes?", a: 0, options: ["Retinopathy", "Hypoglycaemia", "HHNK", "Diabetic Ketoacidosis"], r: "Retinopathy is a chronic complication; the others are acute." },
+        { q: "Supine child flexes neck and subsequently flexes knees and hips.", a: 0, options: ["Brudzinski sign", "Cushing triad", "Kernig sign", "Nuchal rigidity"], r: "This is a classic sign of meningeal irritation." },
+        { q: "CSF: Clear, 50 glucose, slight lymphocytes, normal protein.", a: 3, options: ["Bacteria", "TB", "Fungal", "Viral"], r: "Viral meningitis typically shows clear CSF and normal glucose." },
+        { q: "Child drops pencil and appears to be daydreaming briefly.", a: 0, options: ["Absence seizure", "Akinetic seizure", "Non-epileptic", "Simple spasm"], r: "Absence seizures involve brief lapses in consciousness." },
+        { q: "Priority intervention for a closed head injury?", a: 3, options: ["Assess neuro", "Monitor vitals", "IV access", "Maintain airway"], r: "Airway (ABC) is always the first priority." },
+        { q: "Voices changed, protruding eyeballs, pretibial myxedema.", a: 2, options: ["Thyroiditis", "Goiter", "Grave's Disease", "Hypothyroidism"], r: "Exophthalmos (protruding eyes) is a hallmark of Grave's disease." },
+        { q: "Autoimmune disorder causing hypothyroidism typical signs.", a: 3, options: ["Myxedema coma", "Thyroid storm", "Toxic nodular goiter", "Hashimoto's Thyroiditis"], r: "Hashimoto’s is the most common autoimmune cause of hypothyroidism." },
+        { q: "Red, raised, fluid-filled skin lesions are:", a: 2, options: ["Macules", "Papules", "Vesicles", "Pustules"], r: "Vesicles are small blisters filled with fluid." },
+        { q: "Position for child during Lumbar Puncture?", a: 2, options: ["Supine", "Prone", "Lateral flexed position", "Sitting upright"], r: "The lateral flexed position opens the intervertebral spaces." },
+        { q: "Child avoids eye contact, flaps hands, limited speech.", a: 1, options: ["ADHD", "Autism Spectrum Disorder", "Intellectual disability", "Hearing impairment"], r: "These are primary diagnostic indicators for ASD." },
+        { q: "Amount of fluid for 15kg child with 3rd deg burn (Parkland + Maintenance)?", a: 0, options: ["1990 ml", "687 ml", "1250 ml", "1750 ml"], r: "Calculated based on 4ml x kg x BSA% + Daily Maintenance." },
+        { q: "Remaining fluid for DKA child (25kg) after 20ml/kg bolus?", a: 1, options: ["1625", "3225", "3725", "2775"], r: "Calculation involves daily maintenance plus the remaining deficit." },
+        { q: "First step for newborn (HR 80, slow respirations)?", a: 2, options: ["Chest compression", "Epinephrine", "Initiate Positive Pressure Ventilation (PPV)", "Intubate"], r: "PPV is the most important step in neonatal resuscitation." },
+        { q: "Phototherapy needed for neonate (Mom O+, Baby A+)?", a: 1, options: ["Elevated conjugated", "Elevated unconjugated bilirubin", "Low hemoglobin", "Positive stool culture"], r: "Unconjugated bilirubin causes jaundice and is treated with phototherapy." },
+        { q: "2-day-old concern regarding milk supply. Best advice?", a: 2, options: ["Formula supplement", "Feed every 4 hours", "Assess attachment and positioning", "Give water"], r: "Proper latching is essential for successful breastfeeding." },
+        { q: "Primary component of Kangaroo Mother Care (KMC)?", a: 1, options: ["Incubator", "Skin-to-skin contact", "Bottle feeding", "Heavy clothes"], r: "Skin-to-skin contact provides warmth and bonding." },
+        { q: "Umbilical redness, foul discharge, lethargy in neonate.", a: 1, options: ["Gastroschiasis", "Neonatal Sepsis", "Diaphragmatic hernia", "Meconium umbilicus"], r: "Cord infection (Omphalitis) is a major risk factor for sepsis." },
+        { q: "Nasal flaring, retractions, expiratory grunt in newborn.", a: 1, options: ["Meconium Aspiration", "Respiratory Distress Syndrome (RDS)", "Heart Disease", "Anemia"], r: "These are classic signs of RDS." },
+        { q: "Why give Vitamin K at birth?", a: 2, options: ["Prevent infection", "Stimulate breath", "Prevent bleeding disorders", "Treat jaundice"], r: "Newborns have low vitamin K levels, risking hemorrhage." },
+        { q: "12-hour-old (diabetic mother) jittery, weak cry.", a: 0, options: ["Check blood glucose", "Phototherapy", "Antibiotics", "Oxygen"], r: "Hypoglycemia is common in infants of diabetic mothers." },
+        { q: "No meconium after 24 hours, distended abdomen.", a: 1, options: ["Pyloric stenosis", "Imperforate anus / Hirschsprung’s", "Normal delay", "Reflux"], r: "Delay in meconium suggests intestinal obstruction." },
+        { q: "Action part of the standard 'Warm Chain'?", a: 1, options: ["Bathing immediately", "Drying and covering immediately", "Incubator", "Separating mother/baby"], r: "Immediate drying prevents heat loss via evaporation." },
+        { q: "Priority before surgery for sac-like protrusion on back?", a: 1, options: ["Supine", "Sterile moist dressing", "Pressure bandage", "Feed on back"], r: "Protecting neural tissue from drying and infection is critical." },
+        { q: "Leathery, cracked, wrinkled skin in newborn indicates:", a: 2, options: ["Preterm", "Term", "Post-term", "VLBW"], r: "Post-maturity causes skin peeling and cracking." },
+        { q: "Advice for cracked nipples during feeding?", a: 1, options: ["Stop for 2 days", "Ensure baby takes more areola", "Soap and alcohol", "Bottle feeding"], r: "A deeper latch prevents nipple trauma." },
+        { q: "Preterm with distension, bloody stools, bile emesis.", a: 1, options: ["Sepsis", "Necrotizing Enterocolitis (NEC)", "Intussusception", "Pyloric Stenosis"], r: "NEC is a surgical emergency in premature infants." },
+        { q: "Standard prevention for ophthalmia neonatorum?", a: 1, options: ["Vitamin K", "Tetracycline eye ointment", "IV antibiotics", "Tap water"], r: "Tetracycline ointment at birth prevents neonatal blindness." },
+        { q: "Significantly sunken anterior fontanelle indicates:", a: 2, options: ["Increased ICP", "Normal", "Dehydration", "Hydrocephalus"], r: "Sunken fontanelles are a sign of fluid volume deficit." },
+        { q: "Route for BCG vaccine (EPI)?", a: 2, options: ["Intramuscular", "Subcutaneous", "Intradermal", "Oral"], r: "BCG is administered intradermally." },
+        { q: "Counseling for HIV-exposed infant feeding?", a: 1, options: ["Diluted cow's milk", "Replacement only if AFASS fulfilled", "Mixed feeding", "Avoid vaccines"], r: "Mixed feeding increases HIV risk; AFASS is the safety standard." },
+        { q: "Priority monitoring for apnea of prematurity?", a: 1, options: ["Temp every 8h", "Continuous pulse-ox/respiratory monitoring", "Frequent weighing", "Hgb daily"], r: "Continuous monitoring is required to detect life-threatening pauses." },
+        { q: "Priority for emergency phase of burns?", a: 1, options: ["Topical antibiotics", "Fluid resuscitation and airway", "Skin graft", "High-protein diet"], r: "Airway and fluid balance are immediate priorities." },
+        { q: "Stiff neck, fever, headache. Priority procedure?", a: 1, options: ["Bone marrow", "Lumbar puncture", "Chest X-ray", "Ultrasound"], r: "Lumbar puncture is the definitive test for meningitis." },
+        { q: "Sweaty, pale, shaky child with Type 1 Diabetes.", a: 1, options: ["Hyperglycemia", "Hypoglycemia", "Ketoacidosis", "Infection"], r: "These are signs of low blood sugar." },
+        { q: "Goal for Spastic Cerebral Palsy care?", a: 1, options: ["Curing damage", "Promoting independence", "Restricting activity", "Antibiotics"], r: "Management focuses on functional improvement." },
+        { q: "Initial management for clubfoot (Talipes Equinovarus)?", a: 1, options: ["Surgery", "Serial casting", "Amputation", "Adhesive bandage"], r: "Serial casting (Ponseti method) is the standard approach." },
+        { q: "Severe pain in cast, tingling, not relieved by meds.", a: 1, options: ["Normal pain", "Compartment Syndrome", "Irritation", "Osteomyelitis"], r: "Compartment syndrome is a neurovascular emergency." },
+        { q: "Characteristic feature of Autism?", a: 1, options: ["Social skills", "Impaired social interaction/repetitive behavior", "Advanced verbal", "Likes change"], r: "Deficits in social patterns are hallmark signs." },
+        { q: "Priority assessment for Encephalitis?", a: 1, options: ["Avoid pillows", "Neurological status", "Skin integrity", "Urine output"], r: "Frequent neuro checks monitor brain inflammation." },
+        { q: "Fruity breath, Kussmaul respirations, high glucose.", a: 1, options: ["Insulin shock", "Diabetic Ketoacidosis (DKA)", "Hypoglycemia", "Hyperthyroidism"], r: "Fruity breath is caused by acetone in DKA." },
+        { q: "Priority during post-ictal phase?", a: 1, options: ["Tongue blade", "Side-lying position", "Restrain", "Oral fluids"], r: "The side-lying position prevents aspiration." },
+        { q: "Honey-colored crusted lesions near nose/mouth.", a: 1, options: ["Scabies", "Impetigo", "Tinea Capitis", "Eczema"], r: "Impetigo is a common bacterial skin infection." },
+        { q: "Critical sign of VP shunt malfunction?", a: 1, options: ["Decreased appetite", "Vomiting, irritability, bulging fontanelle", "Sleepiness", "More urine"], r: "These indicate increased intracranial pressure." },
+        { q: "Mainstay of medical management for Osteomyelitis?", a: 1, options: ["Vitamins", "Long-term intravenous antibiotics", "PT only", "Bed rest"], r: "Bone infections require extended antibiotic treatment." },
+        { q: "Classic sign of DDH in infant?", a: 1, options: ["Equal legs", "Asymmetrical gluteal folds", "Symmetrical abduction", "Rapid crawling"], r: "Uneven skin folds suggest hip displacement." },
+        { q: "Communicate with severe intellectual disability?", a: 1, options: ["Medical terminology", "Simple words and gestures", "Speak only to parents", "Speak loudly"], r: "Concrete communication methods are most effective." },
+        { q: "Extreme thirst and frequent urination. Organ?", a: 1, options: ["Heart", "Pancreas", "Muscle", "Skin"], r: "These are signs of diabetes managed by the pancreas." },
+        { q: "Prevent spread of Tinea Capitis?", a: 1, options: ["Share hats", "Do not share personal items", "Stop meds early", "No hair wash"], r: "Fungal infections spread via shared items." },
+        { q: "Physical characteristic of Down Syndrome?", a: 1, options: ["Thin fingers", "Simian crease and upward slanting eyes", "High birth weight", "Facial hair"], r: "The simian crease is a common marker." },
+        { q: "Priority during active seizure?", a: 1, options: ["Wooden spoon", "Clearing area and protecting head", "Hold down", "Drink water"], r: "Safety and injury prevention are the only goals during a seizure." },
+        { q: "Untreated Congenital Hypothyroidism consequence?", a: 1, options: ["Height", "Irreversible intellectual disability", "Improved metabolism", "Strong bones"], r: "Thyroid hormone is essential for early brain development." },
+        { q: "Priority for bleach ingestion?", a: 2, options: ["Induce vomiting", "Gastric lavage", "Assess airway", "Activated charcoal"], r: "Airway stability is the priority with corrosives." },
+        { q: "IMNCI: 3mo with cough, fast breathing (55), no indrawing.", a: 1, options: ["No pneumonia", "Pneumonia", "Severe pneumonia", "Bronchiolitis"], r: "Fast breathing classifies the child as having pneumonia." },
+        { q: "Sign most indicative of severe dehydration (IMNCI)?", a: 1, options: ["Drinks eagerly", "Abnormally sleepy or difficult to awaken", "Slow skin pinch", "Sunken eyes"], r: "Lethargy/unconsciousness is a red flag for severe dehydration." },
+        { q: "Sensitive indicator of acute nutritional status (wasting)?", a: 3, options: ["Height-for-age", "Head circumference", "MUAC", "Weight-for-height"], r: "Weight-for-height reflects current wasting." },
+        { q: "Initial phase for SAM with complications?", a: 2, options: ["Rehabilitation", "Transition", "Stabilization (F-75)", "Follow-up"], r: "The stabilization phase aims to restore metabolic balance." },
+        { q: "Primary concern for 15% 2nd deg burn (first 24h)?", a: 1, options: ["Infection", "Fluid and electrolyte imbalance", "Protein support", "Range of motion"], r: "Hypovolemic shock is the biggest threat initially." },
+        { q: "Vaccine administered at birth in Ethiopia?", a: 1, options: ["Penta/PCV", "BCG and OPV-0", "Measles", "Rota"], r: "BCG and Polio 0 are standard birth vaccines." },
+        { q: "General Danger Sign in IMNCI (2mo - 5yr)?", a: 1, options: ["Fast breathing", "Not able to drink or breastfeed", "Wasting", "Runny nose"], r: "Inability to drink indicates a critical condition." },
+        { q: "Clinical manifestation of Vitamin A deficiency?", a: 1, options: ["Bowing legs", "Bitot’s spots and night blindness", "Bleeding gums", "Enlarged thyroid"], r: "Bitot's spots are specific ocular signs of Vitamin A deficiency." },
+        { q: "Cold chain temperature range (health facility)?", a: 1, options: ["-2 to +2", "+2°C to +8°C", "+8 to +15", "0 to -10"], r: "Vaccines must be kept within this range to maintain potency." },
+        { q: "Severe Persistent Diarrhea length?", a: 3, options: ["5 days", "7 days", "10 days", "14 days or more"], r: "Diarrhea lasting 14 days or more is classified as persistent." },
+        { q: "Intervention for acute asthma exacerbation?", a: 2, options: ["Sedative", "Supine position", "Nebulized short-acting beta-agonists (SABA)", "High fiber"], r: "SABAs provide rapid relief." },
+        { q: "Red flag for developmental delay (18mo)?", a: 2, options: ["No stairs", "No sentences", "Inability to walk independently", "No spoon"], r: "Walking independently should happen by 18 months." },
+        { q: "Characteristic of Marasmus?", a: 2, options: ["Edema", "Moon face", "Old man appearance", "Flaky-paint"], r: "Marasmus is characterized by severe muscle wasting." },
+        { q: "Management for 'Very Severe Febrile Disease'?", a: 0, options: ["Antibiotic dose and refer urgently", "Oral antimalarial", "Increase fluids", "Paracetamol"], r: "Pre-referral treatment and urgent transfer are required." },
+        { q: "Nephrotic Syndrome triad?", a: 1, options: ["HTN/Hematuria/Proteinuria", "Massive Proteinuria, Hypoalbuminemia, and Edema", "Fever/Dysuria", "Hypotension/Oliguria"], r: "Protein loss in urine is the hallmark." },
+        { q: "Post-op Cleft Lip repair priority?", a: 2, options: ["Prone", "Metal spoon", "Maintaining the elbow restraints", "Crying"], r: "Restraints prevent injury to the suture line." },
+        { q: "Characteristic of Intussusception?", a: 2, options: ["Projectile vomiting", "Ribbon stools", "Currant jelly stools", "Rigidity"], r: "Currant jelly stools contain blood and mucus." },
+        { q: "Cola-colored urine in AGN is due to:", a: 1, options: ["Protein", "Presence of red blood cells", "Bile", "Glucose"], r: "Hematuria creates the dark, smoky appearance." },
+        { q: "Hirschsprung’s pre-op goal?", a: 2, options: ["Activity", "Enemas/Low-fiber", "Monitoring for signs of enterocolitis", "Restrict fluids"], r: "Enterocolitis is the most dangerous pre-op complication." },
+        { q: "Periorbital edema and sore throat 2 weeks ago suggests:", a: 1, options: ["UTI", "Acute Post-Streptococcal Glomerulonephritis", "Heart Failure", "Nephrotic Syndrome"], r: "AGN often follows a streptococcal infection." },
+        { q: "Advice for GER (reflux)?", a: 1, options: ["Horizontal", "Thicken formula and keep child upright", "Large bedtime feed", "Vigorous play"], r: "Thickening and gravity help keep stomach contents down." },
+        { q: "Hypospadias is characterized by:", a: 1, options: ["Dorsal opening", "The urethral opening is on the ventral surface", "Undescended testes", "Phimosis"], r: "The opening is on the underside of the penis." },
+        { q: "Common cause of Acute Renal Failure in children?", a: 1, options: ["Polycystic kidney", "Dehydration and Severe Hypovolemia", "Cancer", "Stones"], r: "Hypovolemia reduces renal blood flow." },
+        { q: "Medication for GERD to reduce acid?", a: 1, options: ["Furosemide", "Omeprazole", "Amoxicillin", "Prednisone"], r: "Omeprazole is a Proton Pump Inhibitor." },
+        { q: "Preventive measure for frequent UTIs?", a: 2, options: ["Limit fluids", "Back to front wiping", "Avoiding bubble baths and using cotton underwear", "Hold urine"], r: "Proper hygiene and material choice prevent bacterial growth." },
+        { q: "3 Cs of Esophageal Atresia/TEF?", a: 1, options: ["Crying/Crawling", "Coughing, Choking, and Cyanosis", "Constipation", "Colic"], r: "These occur immediately during feeding attempts." },
+        { q: "Pyloric Stenosis presentation?", a: 1, options: ["Constipation", "Projectile, non-bile stained vomiting", "Edema", "Rectal bleeding"], r: "Forceful vomiting after feeds is the classic sign." },
+        { q: "Gold standard for Hirschsprung’s?", a: 1, options: ["X-ray", "Rectal Biopsy", "Barium Swallow", "Urinalysis"], r: "Biopsy confirms the absence of ganglion cells." },
+        { q: "ORS instruction for mother?", a: 1, options: ["Quick gulps", "Give small, frequent sips", "Stop breastfeeding", "Mix with juice"], r: "Small sips ensure absorption and prevent vomiting." },
+        { q: "Benefit of Malaria prevention in pregnancy?", a: 1, options: ["Aspirin", "Consistent use of ITNs", "Avoid protein", "Limit fluids"], r: "ITNs are the primary preventative tool for malaria." },
+        { q: "Benefit of Kangaroo Mother Care (KMC)?", a: 1, options: ["Infection risk", "Thermal regulation and improved breastfeeding", "Decreased sleep", "Replace follow-up"], r: "KMC uses maternal heat for regulation." },
+        { q: "AMTSL process includes Oxytocin, cord traction, and:", a: 1, options: ["Fundal pressure", "Uterine massage", "Walking", "Manual removal"], r: "Massage helps the uterus contract." }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let answers = new Array(questions.length).fill(null);
+    let timeLeft = 60;
+    let timerInterval = null;
+    let tempSelect = null;
+
+    const qText = document.getElementById('q-text');
+    const optionsDiv = document.getElementById('options-list');
+    const explainBox = document.getElementById('explanation-box');
+    const progress = document.getElementById('progress-fill');
+    const counter = document.getElementById('counter');
+    const timerDisplay = document.getElementById('timer-display');
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 60;
+        updateTimerDisplay();
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                autoSubmit();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const secs = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+        timerDisplay.innerText = `00:${secs}`;
+        
+        if (timeLeft <= 10) {
+            timerDisplay.classList.add('timer-low');
+        } else {
+            timerDisplay.classList.remove('timer-low');
+        }
+    }
+
+    function render() {
+        const item = questions[current];
+        qText.innerText = item.q;
+        optionsDiv.innerHTML = '';
+        explainBox.style.display = 'none';
+        
+        counter.innerText = `Question ${current + 1} of ${questions.length}`;
+        progress.style.width = `${((current + 1) / questions.length) * 100}%`;
+
+        item.options.forEach((opt, i) => {
+            const div = document.createElement('div');
+            div.className = 'option';
+            div.innerText = opt;
+            
+            if (answers[current] !== null) {
+                if (i === item.a) div.classList.add('correct');
+                if (i === answers[current] && i !== item.a) div.classList.add('wrong');
+                showRationale();
+            } else {
+                div.onclick = () => select(i);
+            }
+            optionsDiv.appendChild(div);
+        });
+
+        document.getElementById('prev-btn').disabled = current === 0;
+        document.getElementById('next-btn').disabled = current === questions.length - 1;
+        
+        if (answers[current] === null) {
+            document.getElementById('submit-btn').style.display = 'block';
+            startTimer();
+        } else {
+            document.getElementById('submit-btn').style.display = 'none';
+            clearInterval(timerInterval);
+            timerDisplay.innerText = "--:--";
+            timerDisplay.classList.remove('timer-low');
+        }
+    }
+
+    function select(i) {
+        tempSelect = i;
+        document.querySelectorAll('.option').forEach((b, idx) => {
+            b.classList.toggle('selected', idx === i);
+        });
+    }
+
+    function manualCheck() {
+        if (tempSelect === null) return alert("Please select an answer!");
+        processAnswer(tempSelect);
+    }
+
+    function autoSubmit() {
+        processAnswer(tempSelect);
+    }
+
+    function processAnswer(userChoice) {
+        clearInterval(timerInterval);
+        answers[current] = userChoice;
+        if (userChoice === questions[current].a) score++;
+        tempSelect = null;
+        render();
+        if (current === questions.length - 1 && answers[current] !== null) {
+            finish();
+        }
+    }
+
+    function showRationale() {
+        explainBox.style.display = 'block';
+        document.getElementById('rationale-text').innerText = questions[current].r;
+    }
+
+    function move(step) {
+        current += step;
+        tempSelect = null;
+        render();
+    }
+
+    function finish() {
+        document.getElementById('quiz-ui').classList.add('hidden');
+        document.getElementById('results-ui').style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / ${questions.length}`;
+        
+        const pct = (score / questions.length) * 100;
+        const feedback = document.getElementById('feedback-text');
+        if (pct >= 80) feedback.innerText = "Excellent Work! You are ready for the exam.";
+        else if (pct >= 50) feedback.innerText = "Good effort, but more review is recommended.";
+        else feedback.innerText = "Please review the rationales and try again.";
+    }
+
+    render();
+</script>
+
+</body>
+</html>
 
